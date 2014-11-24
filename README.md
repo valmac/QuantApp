@@ -1,4 +1,4 @@
-<h1 align="center"><img src="http://www.aqicapital.com/Images/QuantAppICO.png" width=27 />QuantApp-Kernel</h1>
+<h1 align="center"><img src="http://www.aqicapital.com/Images/QuantAppICO.png" width=27 />QuantApp</h1>
 ===============
 
 <b>QuantApp</b> is an <b>open-source .NET</b> library was developed and is curated by <a href="http://www.aqicapital.com">AQI Capital Advisors</a>. It is designed to facilitate the development and management of <b>systematic investment strategies</b> within an institutional environment. The library follows a modular architecture enabling multiple developers to work efficiently and in parallel in order to achieve a common and unified role.
