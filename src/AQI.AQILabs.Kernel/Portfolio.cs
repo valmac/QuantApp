@@ -2794,8 +2794,6 @@ namespace AQI.AQILabs.Kernel
                     else
                         return p;
                 }
-                //else if (PositionsInMemory)
-                //    return null;
             }
             else
             {
@@ -2815,19 +2813,8 @@ namespace AQI.AQILabs.Kernel
                     else
                         return p;
                 }
-                //else if (PositionsInMemory)
-                //    return null;
             }
 
-            if (SimulationObject)
-                return null;
-
-            if (_loadedDates.ContainsKey(LastTimestamp.Date))
-                return null;
-
-
-            //this.LoadPositionOrdersMemory(LastTimestamp);
-            //return Factory.FindLatestPosition(this, instrument, aggregated);
             return null;
         }
 
@@ -2853,70 +2840,50 @@ namespace AQI.AQILabs.Kernel
         /// </param>
         public List<Position> RiskPositions(DateTime timestamp, Boolean aggregated)
         {
-            //if (PositionsInMemory || SimulationObject)
+            if (aggregated)
             {
-                if (aggregated)
-                {
-                    if (_positionHistoryMemory_date_aggregated.Count == 0)// && PositionsInMemory)
-                        return null;
-
-                    DateTime latestdate = GetLastTimestamp(timestamp);
-
-                    List<Position> res = new List<Position>();
-
-                    if (_positionHistoryMemory_date_aggregated.ContainsKey(latestdate))
-                        foreach (Position p in _positionHistoryMemory_date_aggregated[latestdate].Values.ToList())
-                        //for (int i = 0; i < _positionHistoryMemory_date_aggregated[latestdate].Count; i++)
-                        {
-                            //Position p = _positionHistoryMemory_date_aggregated[latestdate][i];
-                            if (Math.Abs(p.Unit) > 0 && !IsReserve(p.Instrument))
-                                res.Add(p);
-                        }
-
-                    if (res.Count == 0)// && PositionsInMemory)
-                        return null;
-                    else if (res.Count != 0)
-                        return res;
-                }
-                else
-                {
-                    if (_positionHistoryMemory_date.Count == 0)// && PositionsInMemory)
-                        return null;
-
-                    DateTime latestdate = GetLastTimestamp(timestamp);
-
-                    List<Position> res = new List<Position>();
-
-                    if (_positionHistoryMemory_date.ContainsKey(latestdate))
-                        foreach (Position p in _positionHistoryMemory_date[latestdate].Values.ToList())
-                        //for (int i = 0; i < _positionHistoryMemory_date[latestdate].Count; i++)
-                        {
-                            //Position p = _positionHistoryMemory_date[latestdate][i];
-
-                            if (Math.Abs(p.Unit) > 0 && !IsReserve(p.Instrument))
-                                res.Add(p);
-                        }
-
-                    if (res.Count == 0)// && PositionsInMemory)
-                        return null;
-                    else if (res.Count != 0)
-                        return res;
-                }
-            }
-            if (SimulationObject)
-                return null;
-
-            try
-            {
-                if (_loadedDates.ContainsKey(timestamp.Date))
+                if (_positionHistoryMemory_date_aggregated.Count == 0)
                     return null;
 
-                //this.LoadPositionOrdersMemory(timestamp);
-                //return Factory.Positions(this, timestamp, aggregated);
-                return null;
-            }
-            catch { return null; }
+                DateTime latestdate = GetLastTimestamp(timestamp);
 
+                List<Position> res = new List<Position>();
+
+                if (_positionHistoryMemory_date_aggregated.ContainsKey(latestdate))
+                    foreach (Position p in _positionHistoryMemory_date_aggregated[latestdate].Values.ToList())
+                    {
+                        if (Math.Abs(p.Unit) > 0 && !IsReserve(p.Instrument))
+                            res.Add(p);
+                    }
+
+                if (res.Count == 0)
+                    return null;
+                else if (res.Count != 0)
+                    return res;
+            }
+            else
+            {
+                if (_positionHistoryMemory_date.Count == 0)
+                    return null;
+
+                DateTime latestdate = GetLastTimestamp(timestamp);
+
+                List<Position> res = new List<Position>();
+
+                if (_positionHistoryMemory_date.ContainsKey(latestdate))
+                    foreach (Position p in _positionHistoryMemory_date[latestdate].Values.ToList())
+                    {
+                        if (Math.Abs(p.Unit) > 0 && !IsReserve(p.Instrument))
+                            res.Add(p);
+                    }
+
+                if (res.Count == 0)
+                    return null;
+                else if (res.Count != 0)
+                    return res;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -2928,69 +2895,50 @@ namespace AQI.AQILabs.Kernel
         /// </param>
         public List<Position> Positions(DateTime timestamp, Boolean aggregated)
         {
-            //if (PositionsInMemory || SimulationObject)
+            if (aggregated)
             {
-                if (aggregated)
-                {
-                    if (_positionHistoryMemory_date_aggregated.Count == 0)// && PositionsInMemory)
-                        return null;
-
-                    DateTime latestdate = GetLastTimestamp(timestamp);
-
-                    List<Position> res = new List<Position>();
-
-                    if (_positionHistoryMemory_date_aggregated.ContainsKey(latestdate))
-                        foreach (Position p in _positionHistoryMemory_date_aggregated[latestdate].Values.ToList())
-                        //for (int i = 0; i < _positionHistoryMemory_date_aggregated[latestdate].Count; i++)
-                        {
-                            //Position p = _positionHistoryMemory_date_aggregated[latestdate][i];
-                            if (Math.Abs(p.Unit) > 0)
-                                res.Add(p);
-                        }
-
-                    if (res.Count == 0)// && PositionsInMemory)
-                        return null;
-                    else if (res.Count != 0)
-                        return res;
-                }
-                else
-                {
-                    if (_positionHistoryMemory_date.Count == 0)// && PositionsInMemory)
-                        return null;
-
-                    DateTime latestdate = GetLastTimestamp(timestamp);
-
-                    List<Position> res = new List<Position>();
-
-                    if (_positionHistoryMemory_date.ContainsKey(latestdate))
-                        foreach (Position p in _positionHistoryMemory_date[latestdate].Values.ToList())
-                        //for (int i = 0; i < _positionHistoryMemory_date[latestdate].Count; i++)
-                        {
-                            //Position p = _positionHistoryMemory_date[latestdate][i];
-                            if (Math.Abs(p.Unit) > 0)
-                                res.Add(p);
-                        }
-
-                    if (res.Count == 0)// && PositionsInMemory)
-                        return null;
-                    else if (res.Count != 0)
-                        return res;
-                }
-            }
-            if (SimulationObject)
-                return null;
-
-            try
-            {
-                if (_loadedDates.ContainsKey(timestamp.Date))
+                if (_positionHistoryMemory_date_aggregated.Count == 0)
                     return null;
 
-                //this.LoadPositionOrdersMemory(timestamp);
-                //return Factory.Positions(this, timestamp, aggregated);
-                return null;
-            }
-            catch { return null; }
+                DateTime latestdate = GetLastTimestamp(timestamp);
 
+                List<Position> res = new List<Position>();
+
+                if (_positionHistoryMemory_date_aggregated.ContainsKey(latestdate))
+                    foreach (Position p in _positionHistoryMemory_date_aggregated[latestdate].Values.ToList())
+                    {
+                        if (Math.Abs(p.Unit) > 0)
+                            res.Add(p);
+                    }
+
+                if (res.Count == 0)
+                    return null;
+                else if (res.Count != 0)
+                    return res;
+            }
+            else
+            {
+                if (_positionHistoryMemory_date.Count == 0)
+                    return null;
+
+                DateTime latestdate = GetLastTimestamp(timestamp);
+
+                List<Position> res = new List<Position>();
+
+                if (_positionHistoryMemory_date.ContainsKey(latestdate))
+                    foreach (Position p in _positionHistoryMemory_date[latestdate].Values.ToList())
+                    {
+                        if (Math.Abs(p.Unit) > 0)
+                            res.Add(p);
+                    }
+
+                if (res.Count == 0)
+                    return null;
+                else if (res.Count != 0)
+                    return res;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -3211,7 +3159,7 @@ namespace AQI.AQILabs.Kernel
                             }
                         }
 
-                        if (_orderMemory_aggregated_orderDate.ContainsKey(lastDate) && _orderMemory_aggregated_orderDate[lastDate].ContainsKey(id))// && _orderMemory_aggregated_orderDate[lastDate].ContainsKey(TimeSeriesType.Last))
+                        if (_orderMemory_aggregated_orderDate.ContainsKey(lastDate) && _orderMemory_aggregated_orderDate[lastDate].ContainsKey(id))
                         {
                             ConcurrentDictionary<string, Order> os = _orderMemory_aggregated_orderDate[lastDate][id];
                             Dictionary<string, Order> res = new Dictionary<string, Order>();
@@ -3250,13 +3198,13 @@ namespace AQI.AQILabs.Kernel
                                 }
                             }
 
-                            if (_orderMemory_orderDate.ContainsKey(lastDate) && _orderMemory_orderDate[lastDate].ContainsKey(id))// && _orderMemory_aggregated_orderDate[lastDate].ContainsKey(TimeSeriesType.Last))
+                            if (_orderMemory_orderDate.ContainsKey(lastDate) && _orderMemory_orderDate[lastDate].ContainsKey(id))
                             {
                                 ConcurrentDictionary<string, Order> os = _orderMemory_orderDate[lastDate][id];
                                 Dictionary<string, Order> res = new Dictionary<string, Order>();
 
                                 foreach (Order order in os.Values.ToList())
-                                    if (order.Status != OrderStatus.Booked && order.Status != OrderStatus.NotExecuted && order.OrderDate.Date == timestamp.Date)// && order.Unit != 0)                                            
+                                    if (order.Status != OrderStatus.Booked && order.Status != OrderStatus.NotExecuted && order.OrderDate.Date == timestamp.Date)
                                         res.Add(order.ID, order);
 
 
