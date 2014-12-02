@@ -1000,16 +1000,14 @@ namespace AQI.AQILabs.Kernel
         /// <param name="date">DateTime valued date 
         /// </param>
         /// <param name="sign">Long or Short
-        /// </param>
-        /// </param>
+        /// </param>        
         public virtual void Direction(DateTime date, DirectionType sign) { }
 
         /// <summary>
         /// Function: Get the direction type of the strategy
         /// </summary>       
         /// <param name="date">DateTime valued date 
-        /// </param>
-        /// </param>
+        /// </param>        
         public virtual DirectionType Direction(DateTime date) { return DirectionType.Long; }
 
 
