@@ -182,8 +182,8 @@ type PortfolioStrategy =
         let days_back = (int)this.[orderDate.DateTime, (int)MemoryType.DaysBack, TimeSeriesRollType.Last]
                 
         let maxdd = Math.Min(instrument_t / hwm - 1.0, 0.0)
-        let recovery = instrument_t / lwm - 1.0
-        (1.0 + maxdd + recovery)
+                
+        1.0 + maxdd
 
 
     /// <summary>
@@ -351,8 +351,7 @@ type PortfolioStrategy =
                                                                 let vol = if strategy_ts = null || strategy_ts.Count < 5 then TargetVolatility else this.Risk(orderDate, strategy_ts, reference_aum)                                                                                                                                
                                                                 let exposureWeight = if ExposureFlag = 1 then this.Exposure(orderDate, instrument) else 1.0                                                                
                                                                 let dp = if vol < 1e-5 || IndividualVolatilityTargetFlag = 0 then 1.0 else TargetVolatility / vol
-                                                                dp * exposureWeight    
-                                        
+                                                                dp * exposureWeight                                        
                                         dp_notional)
                                     |> (fun weightMap ->                                                                        // Neutral Covariance Weight (Step 2)
                                         if weightMap.Count = 0 then
