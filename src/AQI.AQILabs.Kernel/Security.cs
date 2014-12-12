@@ -273,7 +273,7 @@ namespace AQI.AQILabs.Kernel
                 this.ExchangeID = value.ID;
 
                 if (!SimulationObject)
-                    Factory.SetProperty(this, "ExchangeID", value);                
+                    Factory.SetProperty(this, "ExchangeID", value.ID);                
             }
         }
 

@@ -2976,62 +2976,70 @@ namespace AQI.AQILabs.Kernel
         /// </param>
         public void ClearOrders(DateTime timestamp)
         {
-            timestamp = timestamp.Date;
-            if (_orderMemory_aggregated_orderDate.ContainsKey(timestamp))
+            if (_orderMemory_aggregated_orderDate.ContainsKey(timestamp.Date))
             {
-                ConcurrentDictionary<int, ConcurrentDictionary<string, Order>> orders = _orderMemory_aggregated_orderDate[timestamp];
+                ConcurrentDictionary<int, ConcurrentDictionary<string, Order>> orders = _orderMemory_aggregated_orderDate[timestamp.Date];
                 if (orders != null)
                     foreach (int id in orders.Keys.ToList())
                     {
-
-
-                        foreach (Order o in orders[id].Values)
+                        foreach (Order o in orders[id].Values.ToList())
                         {
-                            Order v = null;
+                            if (o.OrderDate == timestamp)
+                            {
+                                Order v = null;
+                                
+                                if (_orderMemory_aggregated.ContainsKey(o.ID))
+                                    _orderMemory_aggregated.TryRemove(o.ID, out v);
 
-                            if (_orderMemory_aggregated.ContainsKey(o.ID))
-                                _orderMemory_aggregated.TryRemove(o.ID, out v);
-
-                            if (_orderNewMemory_aggregated.ContainsKey(o.ID))
-                                _orderNewMemory_aggregated.TryRemove(o.ID, out v);
+                                if (_orderNewMemory_aggregated.ContainsKey(o.ID))
+                                    _orderNewMemory_aggregated.TryRemove(o.ID, out v);
+                            }
                         }
 
                         if (_orderMemory_aggregated_instrument_orderDate.ContainsKey(id))
                         {
-                            ConcurrentDictionary<string, Order> v = null;
-                            if (_orderMemory_aggregated_instrument_orderDate[id].ContainsKey(timestamp))
-                                _orderMemory_aggregated_instrument_orderDate[id].TryRemove(timestamp, out v);
+                            Order v = null;
+                            if (_orderMemory_aggregated_instrument_orderDate[id].ContainsKey(timestamp.Date))
+                                foreach (var i in _orderMemory_aggregated_instrument_orderDate[id][timestamp.Date].Values.ToList())
+                                    if (i.OrderDate == timestamp)
+                                        _orderMemory_aggregated_instrument_orderDate[id][timestamp.Date].TryRemove(i.ID, out v);
                         }
 
-                        ConcurrentDictionary<string, Order> v2 = null;
-                        _orderMemory_aggregated_orderDate[timestamp].TryRemove(id, out v2);
+                        Order v2 = null;
+                        foreach (Order o in _orderMemory_aggregated_orderDate[timestamp.Date][id].Values.ToList())
+                            if (o.OrderDate == timestamp)
+                                _orderMemory_aggregated_orderDate[timestamp.Date][id].TryRemove(o.ID, out v2);
                     }
             }
 
-            if (_orderMemory_orderDate.ContainsKey(timestamp))
+            if (_orderMemory_orderDate.ContainsKey(timestamp.Date))
             {
-                ConcurrentDictionary<int, ConcurrentDictionary<string, Order>> orders = _orderMemory_orderDate[timestamp];
+                ConcurrentDictionary<int, ConcurrentDictionary<string, Order>> orders = _orderMemory_orderDate[timestamp.Date];
                 if (orders != null)
                     foreach (int id in orders.Keys.ToList())
                     {
                         foreach (Order o in orders[id].Values)
                         {
                             Order v = null;
-                            if (_orderMemory.ContainsKey(o.ID))
+                            if (_orderMemory.ContainsKey(o.ID) && o.OrderDate == timestamp)
                                 _orderMemory.TryRemove(o.ID, out v);
 
-                            if (_orderNewMemory.ContainsKey(o.ID))
+                            if (_orderNewMemory.ContainsKey(o.ID) && o.OrderDate == timestamp)
                                 _orderNewMemory.TryRemove(o.ID, out v);
                         }
 
-                        ConcurrentDictionary<string, Order> v2 = null;
+                        Order v2 = null;
                         if (_orderMemory_instrument_orderDate.ContainsKey(id))
                         {
-                            if (_orderMemory_instrument_orderDate[id].ContainsKey(timestamp))
-                                _orderMemory_instrument_orderDate[id].TryRemove(timestamp, out v2);
+                            if (_orderMemory_instrument_orderDate[id].ContainsKey(timestamp.Date))
+                                foreach (Order o in _orderMemory_instrument_orderDate[id][timestamp.Date].Values.ToList())
+                                    if (o.OrderDate == timestamp)
+                                        _orderMemory_instrument_orderDate[id][timestamp.Date].TryRemove(o.ID, out v2);
                         }
 
-                        _orderMemory_orderDate[timestamp].TryRemove(id, out v2);
+                        foreach (Order o in _orderMemory_orderDate[timestamp.Date][id].Values.ToList())
+                            if (o.OrderDate == timestamp)
+                                _orderMemory_orderDate[timestamp.Date][id].TryRemove(o.ID, out v2);
                     }
             }
         }
@@ -4284,7 +4292,9 @@ namespace AQI.AQILabs.Kernel
 
                 unit = OrderUnitCalculationFilter(instrument, unit);
 
-                //Console.WriteLine("Create Order: " + instrument + " " + orderDate + " " + unit);
+              
+                //if (instrument.InstrumentType == Kernel.InstrumentType.Future)
+                //    Console.WriteLine("Create Order: " + this + " " + instrument + " " + orderDate + " " + unit);
 
                 if (!_quickAddedInstruments.ContainsKey(instrument) && !IsReserve(instrument) && unit != 0.0)
                 {
@@ -4465,6 +4475,8 @@ namespace AQI.AQILabs.Kernel
         {
             OrderType type = OrderType.Market;
             double limit = 0;
+
+            unit = OrderUnitCalculationFilter(instrument, unit);
 
             Position oldPosition = FindPosition(instrument, orderDate);
 

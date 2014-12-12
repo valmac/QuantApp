@@ -166,6 +166,8 @@ type RollingFutureStrategy =
                         
                         this.RemoveInstruments(orderDate.DateTime)
                         let contract_value = (!nextFuture).[orderDate.Close, TimeSeriesType.Last, DataProvider.DefaultProvider, TimeSeriesRollType.Last] * (!nextFuture).PointSize
+
+
                         let unit = CurrencyPair.Convert(reference_aum, orderDate.DateTime, TimeSeriesType.Last, DataProvider.DefaultProvider, TimeSeriesRollType.Last, instrument.Currency, this.Portfolio.Currency) / (contract_value)
                         this.AddInstrument(!nextFuture, orderDate.DateTime)                        
                         this.Portfolio.CreateTargetMarketOrder(!nextFuture, orderDate.DateTime, Math.Abs(unit) * (double) sign) |> ignore
@@ -210,9 +212,10 @@ type RollingFutureStrategy =
             else
                 this.AddMemoryPoint(date, (double)sign, (int)MemoryType.Sign)           
                 this.UnderlyingInstrument <- Instrument.FindInstrument((int)this.[date, (int)MemoryType.UnderlyingID, TimeSeriesRollType.Last])
-                let positions = this.Portfolio.Positions(date)
+                //let positions = this.Portfolio.Positions(date)
+                let positions = this.Portfolio.AggregatedPositionOrders(date);
                 let positions_sorted = if not (positions = null) then
-                                        positions
+                                        positions.Values
                                         |> Seq.toList
                                         |> List.filter (fun pos ->
                                             pos.Instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.Future)
@@ -230,7 +233,15 @@ type RollingFutureStrategy =
                 let position0 = ref null
                 if (not (positions = null) && positions_sorted.Length = 1) then
                     position0 := positions_sorted.[0]
-                    (!position0).UpdateTargetMarketOrder(date, (double)sign * Math.Abs((!position0).Unit), UpdateType.OverrideUnits) |> ignore
+                    let orders = this.Portfolio.FindOpenOrder(position0.Value.Instrument, date, false)
+                    let order = if orders.Count = 0 then null else orders.Values  |> Seq.toList |> List.filter (fun o -> o.Type = OrderType.Market) |> List.reduce (fun acc o -> o) 
+                    //let ord = this.Portfolio.FindOrder(position0.Value.Instrument, date).[0]
+                    let position = this.Portfolio.FindPosition(position0.Value.Instrument, date)
+
+                    if not(order = null) then
+                        order.UpdateTargetMarketOrder(date, (double)sign * Math.Abs((!position0).Unit), UpdateType.OverrideUnits) |> ignore
+                    elif not(position = null) then
+                        position.UpdateTargetMarketOrder(date, (double)sign * Math.Abs((!position0).Unit), UpdateType.OverrideUnits) |> ignore
         
 
         /// <summary>

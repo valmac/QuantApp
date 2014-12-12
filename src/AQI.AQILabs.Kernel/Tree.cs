@@ -81,7 +81,7 @@ namespace AQI.AQILabs.Kernel
         {
             _parentStrategy.Initialize();
 
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.Initialize();
         }
 
@@ -95,10 +95,10 @@ namespace AQI.AQILabs.Kernel
         {
             if (_parentStrategy != null)
             {
-                foreach (Strategy strat in _strategyDB.Values)
-                    GetTree(strat).Remove();
+                foreach (Strategy strat in _strategyDB.Values.ToList())
+                    strat.Tree.Remove();
 
-                foreach (Dictionary<int, double> db in _strategyExecutionDB.Values)
+                foreach (Dictionary<int, double> db in _strategyExecutionDB.Values.ToList())
                     if (db != null && db.ContainsKey(_parentStrategy.ID))
                         db.Remove(_parentStrategy.ID);
 
@@ -121,10 +121,10 @@ namespace AQI.AQILabs.Kernel
         {
             if (_parentStrategy != null)
             {
-                foreach (Strategy strat in _strategyDB.Values)
-                    GetTree(strat).RemoveFrom(date);
+                foreach (Strategy strat in _strategyDB.Values.ToList())
+                    strat.Tree.RemoveFrom(date);
 
-                foreach (Dictionary<int, double> db in _strategyExecutionDB.Values)
+                foreach (Dictionary<int, double> db in _strategyExecutionDB.Values.ToList())
                     if (db.ContainsKey(_parentStrategy.ID))
                         db.Remove(_parentStrategy.ID);
 
@@ -213,7 +213,7 @@ namespace AQI.AQILabs.Kernel
         {
             Dictionary<int, Strategy> clones_internal = new Dictionary<int, Strategy>();
 
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
             {
                 Tree tree_clone = strat.Tree.Clone_Internal(initialDate, finalDate, clones, initial_values, simulated);
                 if (tree_clone != null)
@@ -224,7 +224,7 @@ namespace AQI.AQILabs.Kernel
                 }
             }
 
-            foreach (Strategy strategy in _strategyDB.Values)
+            foreach (Strategy strategy in _strategyDB.Values.ToList())
                 if (strategy.Portfolio == null)
                 {
                     if (!clones.ContainsKey(strategy.ID))
@@ -245,7 +245,7 @@ namespace AQI.AQILabs.Kernel
             if (_parentStrategy.Portfolio != null)
             {
                 Portfolio portfolioClone = _parentStrategy.Portfolio.Clone(simulated);
-                foreach (int[] ids in _parentStrategy.Portfolio.ReserveIds)
+                foreach (int[] ids in _parentStrategy.Portfolio.ReserveIds.ToList())
                 {
                     Currency ccy = Currency.FindCurrency(ids[0]);
                     Instrument longReserve = Instrument.FindInstrument(ids[1]);
@@ -261,7 +261,7 @@ namespace AQI.AQILabs.Kernel
                 initial_values.Add(strategyClone.ID, _parentStrategy.GetAUM(DateTime.Now, TimeSeriesType.Last));
 
                 Tree clone = strategyClone.Tree;
-                foreach (Strategy st in clones_internal.Values)
+                foreach (Strategy st in clones_internal.Values.ToList())
                 {
                     if (st.Portfolio != null)
                         st.Portfolio.ParentPortfolio = clone.Strategy.Portfolio;
@@ -286,7 +286,7 @@ namespace AQI.AQILabs.Kernel
         {
             Dictionary<int, Strategy> clones_internal = new Dictionary<int, Strategy>();
 
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
             {
                 if (strat.InitialDate <= initialDate && strat.FinalDate >= finalDate)
                     clones_internal.Add(strat.ID, clones[strat.ID]);
@@ -294,7 +294,7 @@ namespace AQI.AQILabs.Kernel
 
             if (_parentStrategy.Portfolio != null)
             {
-                foreach (Strategy st in clones_internal.Values)
+                foreach (Strategy st in clones_internal.Values.ToList())
                 {
                     if (!clones[_parentStrategy.ID].Portfolio.IsReserve(st))
                         clones[_parentStrategy.ID].Portfolio.CreatePosition(st, initialDate, (initial_values[st.ID] == 0.0 ? 0 : 1.0), initial_values[st.ID]);
@@ -309,8 +309,8 @@ namespace AQI.AQILabs.Kernel
         /// </param>
         public bool ContainsStrategy(Strategy strategy)
         {
-            foreach (Strategy strat in _strategyDB.Values)
-                if (GetTree(strat).ContainsStrategy(strat))
+            foreach (Strategy strat in _strategyDB.Values.ToList())
+                if (strat.Tree.ContainsStrategy(strat))
                     return true;
 
             return _strategyDB.ContainsKey(strategy.ID);
@@ -323,7 +323,7 @@ namespace AQI.AQILabs.Kernel
         /// <param name="day">reference day</param>
         public double PreNAVCalculation(DateTime day)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 if (strat.InitialDate <= day && strat.FinalDate >= day)
                     strat.Tree.PreNAVCalculation(day);
 
@@ -347,7 +347,7 @@ namespace AQI.AQILabs.Kernel
         /// <remarks>called during the cloning process</remarks>
         private void Startup(BusinessDay initialDate, Dictionary<int, double> initial_values)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.Startup(initialDate, initial_values);
 
             _parentStrategy.Startup(initialDate, Math.Abs(initial_values[_parentStrategy.ID]), _parentStrategy.Portfolio);
@@ -363,7 +363,7 @@ namespace AQI.AQILabs.Kernel
         {
             lock (objLock)
             {
-                foreach (Strategy strat in _strategyDB.Values)
+                foreach (Strategy strat in _strategyDB.Values.ToList())
                     if (strat.InitialDate <= day && strat.FinalDate >= day)
                         strat.Tree.NAVCalculation(day);
 
@@ -388,9 +388,9 @@ namespace AQI.AQILabs.Kernel
         /// <param name="day">reference day</param>
         public void AddRemoveSubStrategies(DateTime day)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 if (strat.InitialDate <= day && strat.FinalDate >= day && strat.Portfolio != null)
-                    GetTree(strat).AddRemoveSubStrategies(day);
+                    strat.Tree.AddRemoveSubStrategies(day);
 
             BusinessDay date_local = _parentStrategy.Calendar.GetBusinessDay(day);
             if (date_local != null)
@@ -403,22 +403,21 @@ namespace AQI.AQILabs.Kernel
         /// <param name="orderDate">reference day</param>
         public void ExecuteLogic(DateTime orderDate)
         {
+            ExecuteLogic( orderDate, true);            
+        }
+
+        /// <summary>
+        /// Function: Internal function to executed the logic for each strategy and its sub-nodes
+        /// </summary>
+        /// <param name="orderDate">reference day</param>
+        /// /// <param name="recursive">true if recursive</param>
+        private void ExecuteLogic(DateTime orderDate, bool recursive)
+        {
             if (_parentStrategy.Portfolio != null)
             {
                 DateTime executionDate = orderDate.AddDays(1);
 
                 List<Strategy> recalcs = new List<Strategy>();
-
-
-                //foreach (Strategy strat in _strategyDB.Values)
-                //    if (strat.InitialDate <= orderDate && strat.FinalDate >= executionDate && strat.Portfolio != null)
-                //    {
-                //        double oldAUM = strat.GetNextAUM(orderDate, TimeSeriesType.Last);
-                //        if (double.IsNaN(oldAUM) || oldAUM == 0.0)
-                //            recalcs.Add(strat);
-                //        else
-                //            strat.Tree.ExecuteLogic(orderDate);
-                //    }
 
                 Parallel.ForEach(_strategyDB.Values, strat =>
                 {
@@ -428,7 +427,7 @@ namespace AQI.AQILabs.Kernel
                         if (double.IsNaN(oldAUM) || oldAUM == 0.0)
                             recalcs.Add(strat);
                         else
-                            strat.Tree.ExecuteLogic(orderDate);
+                            strat.Tree.ExecuteLogic(orderDate, false);
                     }
                 });
 
@@ -439,24 +438,14 @@ namespace AQI.AQILabs.Kernel
                 {
                     _parentStrategy.ExecuteLogic(_parentStrategy.ExecutionContext(orderDate_local));
 
+                    if (!recursive)
+                        return;
+
                     double newAUM = _parentStrategy.GetNextAUM(orderDate, TimeSeriesType.Last);
 
                     if (!double.IsNaN(newAUM))
                     {
                         Boolean recalc = false;
-                        //foreach (Strategy strat in recalcs)
-                        //    if (strat.InitialDate <= orderDate_local.DateTime && strat.FinalDate >= orderDate_local.AddBusinessDays(1).DateTime)
-                        //    {
-                        //        double oldAUM = strat.GetNextAUM(orderDate, TimeSeriesType.Last);
-
-                        //        if (!double.IsNaN(oldAUM))
-                        //        {
-                        //            strat.Tree.ExecuteLogic(orderDate_local.DateTime);
-
-                        //            recalc = true;
-                        //        }
-                        //    }
-
 
                         Parallel.ForEach(recalcs, strat =>
                         {
@@ -465,12 +454,7 @@ namespace AQI.AQILabs.Kernel
                                 double oldAUM = strat.GetNextAUM(orderDate, TimeSeriesType.Last);
 
                                 if (!double.IsNaN(oldAUM))
-                                {
-                                    strat.Tree.ExecuteLogic(orderDate_local.DateTime);
-
                                     recalc = true;
-
-                                }
                             }
                         });
 
@@ -478,13 +462,9 @@ namespace AQI.AQILabs.Kernel
                         if (recalc)
                         {
                             _parentStrategy.ClearMemory(orderDate_local.DateTime);
-                            _parentStrategy.ClearMemory(orderDate_local.DateTime);
 
-                            if (_parentStrategy.Portfolio != null)
-                                _parentStrategy.Portfolio.ClearOrders(orderDate_local.DateTime);
-
-                            _parentStrategy.ExecuteLogic(_parentStrategy.ExecutionContext(orderDate_local));
-
+                            _parentStrategy.Tree.ClearOrders(orderDate_local.DateTime, true);
+                            _parentStrategy.Tree.ExecuteLogic(orderDate_local.DateTime, false);
                         }
                     }
                 }
@@ -497,9 +477,9 @@ namespace AQI.AQILabs.Kernel
         /// <param name="orderDate">reference day</param>
         public void PostExecuteLogic(DateTime day)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 if (strat.InitialDate <= day && strat.FinalDate >= day)
-                    GetTree(strat).PostExecuteLogic(day);
+                    strat.Tree.PostExecuteLogic(day);
 
             BusinessDay date_local = _parentStrategy.Calendar.GetBusinessDay(day);
             if (date_local != null)
@@ -583,7 +563,7 @@ namespace AQI.AQILabs.Kernel
         /// </summary>        
         public void LoadPortfolioMemory()
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.LoadPortfolioMemory();
 
             if (_parentStrategy.Portfolio != null)
@@ -599,7 +579,7 @@ namespace AQI.AQILabs.Kernel
             if (_parentStrategy.Portfolio != null)
                 _parentStrategy.Portfolio.LoadPositionOrdersMemory(date, false);
 
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.LoadPortfolioMemory(date);
         }
 
@@ -613,7 +593,7 @@ namespace AQI.AQILabs.Kernel
             if (_parentStrategy.Portfolio != null)
                 _parentStrategy.Portfolio.LoadPositionOrdersMemory(date, force);
 
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.LoadPortfolioMemory(date, force);
         }
 
@@ -623,7 +603,7 @@ namespace AQI.AQILabs.Kernel
         /// <param name="date">reference date</param>
         public void ManageCorporateActions(DateTime date)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.ManageCorporateActions(date);
 
             if (_parentStrategy.Portfolio != null)
@@ -636,7 +616,7 @@ namespace AQI.AQILabs.Kernel
         /// <param name="date">reference date</param>
         public void MarginFutures(DateTime date)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.MarginFutures(date);
 
             if (_parentStrategy.Portfolio != null)
@@ -649,7 +629,7 @@ namespace AQI.AQILabs.Kernel
         /// <param name="date">reference data</param>
         public void HedgeFX(DateTime date)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.HedgeFX(date);
 
             if (_parentStrategy.Portfolio != null)
@@ -664,7 +644,7 @@ namespace AQI.AQILabs.Kernel
         {
             int count = 0;
 
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 if (strat.InitialDate <= executionDay && strat.FinalDate >= executionDay)
                     count += strat.Tree.BookOrders(executionDay);
 
@@ -686,7 +666,7 @@ namespace AQI.AQILabs.Kernel
         {
             int count = 0;
 
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 if (strat.InitialDate <= executionDay && strat.FinalDate >= executionDay)
                     count += strat.Tree.ReBookOrders(executionDay);
 
@@ -705,7 +685,7 @@ namespace AQI.AQILabs.Kernel
         /// </summary> 
         public void SaveNewPositions()
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.SaveNewPositions();
 
             if (_parentStrategy.Portfolio != null)
@@ -717,7 +697,7 @@ namespace AQI.AQILabs.Kernel
         /// </summary>    
         public void Save()
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.Save();
 
             Console.WriteLine("Saving: " + _parentStrategy);
@@ -731,7 +711,7 @@ namespace AQI.AQILabs.Kernel
         /// </param>
         public void ClearMemory(DateTime date)
         {
-            foreach (Strategy strat in _strategyDB.Values)
+            foreach (Strategy strat in _strategyDB.Values.ToList())
                 strat.Tree.ClearMemory(date);
 
             if (_parentStrategy.Initialized)
@@ -746,8 +726,8 @@ namespace AQI.AQILabs.Kernel
         /// <param name="clearMemory">True if clear AUM memory also.</param>
         public void ClearOrders(DateTime orderDate, bool clearMemory)
         {
-            foreach (Strategy strat in _strategyDB.Values)
-                GetTree(strat).ClearOrders(orderDate, clearMemory);
+            foreach (Strategy strat in _strategyDB.Values.ToList())
+                strat.Tree.ClearOrders(orderDate, clearMemory);
 
             BusinessDay date_local = _parentStrategy.Calendar.GetBusinessDay(orderDate);
             if (date_local != null)

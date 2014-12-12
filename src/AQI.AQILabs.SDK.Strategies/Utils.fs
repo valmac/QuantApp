@@ -151,7 +151,7 @@ module Utils =
                                     (not (strategy.Portfolio.IsReserve(position.Instrument))) && (not (position.Unit = 0.0)) && (idx > 1))
                                 |> List.length
 
-                if counter = 0 then 1.0 else strategy_aum / reference_aum
+                if counter = 0 || strategy_aum = 0.0 then 1.0 else strategy_aum / reference_aum
             | _ -> 1.0
         
 
@@ -166,8 +166,7 @@ module Utils =
     /// <param name="days_back">number of days used in the timeseries</param>
     let TimeSeriesMap (strategy : Strategy, orderDate: BusinessDay, reference_aum : double, days_back : int) =
 
-        let instruments = strategy.Instruments(DateTime.Today, false)
-        
+        let instruments = strategy.Instruments(DateTime.Today, false)        
         let timeSeriesMapDirty = instruments.Values
                                 |> Seq.filter (fun instrument -> // filter out reserve instruments and instruments without timeseries data
                                     let ttype = if instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.ETF || instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.Equity then TimeSeriesType.AdjClose else if instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.Strategy then TimeSeriesType.Last else TimeSeriesType.Close
@@ -241,7 +240,7 @@ module Utils =
                             
                                         normalized_ts.DifferenceReturn().ReplaceNaN(0.0))
                                 |> Map.filter (fun id tuple -> not (tuple = null))
-
+        
         let firstSeries = if timeSeriesMapDirty.Count = 0 then null else timeSeriesMapDirty |> Map.toList |> List.map (fun (k,v) -> v) |> List.sortBy (fun (v) -> -v.Count) |> List.head
         let timeSeriesMap = timeSeriesMapDirty
                             |> Map.map (fun k timeseries ->
@@ -252,4 +251,5 @@ module Utils =
                                         [0 .. firstSeries.Count - 1] |> List.iter (fun i -> (!tss).[firstSeries.DateTimes.[i]] <- timeseries.[firstSeries.DateTimes.[i], TimeSeries.DateSearchType.Previous])
                                         strategy_ts <- (!tss).ReplaceNaN(0.0)
                                 strategy_ts)
+        
         timeSeriesMap

@@ -139,8 +139,8 @@ type PortfolioStrategy =
         let ts_s_count = if not (ts_s = null) then ts_s.Count else 0
         let idx_s = if ts_s_count > 0 then ts_s.GetClosestDateIndex(orderDate.DateTime, TimeSeries.DateSearchType.Previous) else 0
         let ts_s = ts_s.GetRange(1 , idx_s)
-        let instrument_t_1 = if idx_s = 0 then 0.0 else ts_s.[Math.Max(0, ts_s.Count - 2)]
-        let instrument_t = if idx_s = 0 then 0.0 else ts_s.[Math.Max(0, ts_s.Count - 1)]
+        let instrument_t_1 = if idx_s <= 0 then 0.0 else ts_s.[Math.Max(0, ts_s.Count - 2)]
+        let instrument_t = if idx_s <= 0 then 0.0 else ts_s.[Math.Max(0, ts_s.Count - 1)]
         let hwm = if ts_s.Count = 0 then instrument_t_1 else ts_s.Maximum
 
         let lwm =                                 
@@ -229,14 +229,17 @@ type PortfolioStrategy =
     /// stop-loss changes with the level of volatility making it more adaptive and less prone to locking in losses.
     /// </summary>
     static member ExposureDefault(this : PortfolioStrategy, orderDate : BusinessDay, instrument : Instrument) =        
-        let (hwm, lwm, instrument_t, instrument_t_1, ts_s) = this.HighLowMark(instrument, orderDate)
-        let days_back = (int)this.[orderDate.DateTime, (int)MemoryType.DaysBack, TimeSeriesRollType.Last]
-        let exp_threshhold = this.[orderDate.DateTime, (int)MemoryType.ExposureThreshold, TimeSeriesRollType.Last]
-        let ttype = if instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.ETF || instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.Equity then TimeSeriesType.AdjClose elif instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.Strategy then TimeSeriesType.Last else TimeSeriesType.Close
-        let ts = ts_s.GetRange(Math.Max(0,ts_s.Count - 1 - days_back) , Math.Max(0,ts_s.Count - 1)).LogReturn().ReplaceNaN(0.0)
-        let vol = ts.StdDev * Math.Sqrt(252.0)
+        if instrument.InstrumentType = InstrumentType.Strategy then
+            1.0
+        else
+            let (hwm, lwm, instrument_t, instrument_t_1, ts_s) = this.HighLowMark(instrument, orderDate)
+            let days_back = (int)this.[orderDate.DateTime, (int)MemoryType.DaysBack, TimeSeriesRollType.Last]
+            let exp_threshhold = this.[orderDate.DateTime, (int)MemoryType.ExposureThreshold, TimeSeriesRollType.Last]
+            let ttype = if instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.ETF || instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.Equity then TimeSeriesType.AdjClose elif instrument.InstrumentType = AQI.AQILabs.Kernel.InstrumentType.Strategy then TimeSeriesType.Last else TimeSeriesType.Close
+            let ts = if ts_s.Count <= 1 then null else ts_s.GetRange(Math.Max(0,ts_s.Count - 1 - days_back) , Math.Max(0,ts_s.Count - 1)).LogReturn().ReplaceNaN(0.0)
+            let vol = if ts = null then 0.0 else ts.StdDev * Math.Sqrt(252.0)
                
-        (if (hwm * (1.0 - vol * exp_threshhold)  > instrument_t_1) then (if (lwm * (1.0 + vol)  < instrument_t_1) then 1.0 else 0.0)  else 1.0)
+            if ts = null then 1.0 else (if (hwm * (1.0 - vol * exp_threshhold)  > instrument_t_1) then (if (lwm * (1.0 + vol)  < instrument_t_1) then 1.0 else 0.0)  else 1.0)
 
 
     /// <summary>
@@ -281,8 +284,7 @@ type PortfolioStrategy =
             let rebalancing = (int)this.[orderDate.DateTime, (int)MemoryType.RebalancingFrequency, TimeSeriesRollType.Last]
             let days_back = (int)this.[orderDate.DateTime, (int)MemoryType.DaysBack, TimeSeriesRollType.Last]
             let instruments = this.Instruments(DateTime.Today, false)
-
-            
+                
             match (days_back = Int32.MinValue || Double.IsNaN(TargetVolatility) || TargetVolatility = 0.0) with
             | true -> // Create positions if they don't exist because there is not logic to run
                 let timeSeriesMap = Utils.TimeSeriesMap(this, orderDate, reference_aum, days_back)
@@ -312,7 +314,7 @@ type PortfolioStrategy =
                         elif position = null then
                             this.Portfolio.CreateTargetMarketOrder(instrument, orderDate.DateTime, size) |> ignore)
 
-            | _ -> // Run logic
+            | _ -> // Run logic                
                 let rebalanceDayCheck = match rebalancing with
                                         | 0 -> true //Every day
                                         | -1 -> executionDate.DateTime.DayOfWeek > executionDate.AddBusinessDays(1).DateTime.DayOfWeek //Last day of the week
@@ -349,9 +351,9 @@ type PortfolioStrategy =
                                                                 dp * (if notional_allocation = 0.0 then 1.0 / (double)instruments.Count else notional_allocation)                                                        
                                                             | _ -> 
                                                                 let vol = if strategy_ts = null || strategy_ts.Count < 5 then TargetVolatility else this.Risk(orderDate, strategy_ts, reference_aum)                                                                                                                                
-                                                                let exposureWeight = if ExposureFlag = 1 then this.Exposure(orderDate, instrument) else 1.0                                                                
+                                                                let exposureWeight = if ExposureFlag = 1 then this.Exposure(orderDate, instrument) else 1.0
                                                                 let dp = if vol < 1e-5 || IndividualVolatilityTargetFlag = 0 then 1.0 else TargetVolatility / vol
-                                                                dp * exposureWeight                                        
+                                                                dp * (if exposureWeight = 0.0 then 0.0 else (if exposureWeight > 0.0 then 1.0 else -1.0))                                        
                                         dp_notional)
                                     |> (fun weightMap ->                                                                        // Neutral Covariance Weight (Step 2)
                                         if weightMap.Count = 0 then
@@ -388,7 +390,7 @@ type PortfolioStrategy =
                                     |> Map.map (fun id weight ->                                                                // Individually Capped Weights (Step 4)                                  
                                         let instrument = Instrument.FindInstrument(id)
                                         let notional_strategy_adjustment = Utils.Notional_Strategy_Adjustment(instrument, orderDate, reference_aum)
-                                        (if Double.IsNaN(TargetVolatility) then 1.0 else Math.Min(max_ind_levarge, weight * notional_strategy_adjustment) / notional_strategy_adjustment))
+                                        (if Double.IsNaN(TargetVolatility) || notional_strategy_adjustment = 0.0 then 1.0 else Math.Min(max_ind_levarge, weight * notional_strategy_adjustment) / notional_strategy_adjustment))
 
                                     |> (fun weightMap ->                                                                        // Global Leverage Constrained Weight (Step 5)
                                         if weightMap.Count = 0 then
@@ -496,8 +498,10 @@ type PortfolioStrategy =
                         let orders = this.Portfolio.FindOpenOrder(instrument, orderDate.DateTime, false)
                         let order = if orders.Count = 0 then null else orders.Values  |> Seq.toList |> List.filter (fun o -> o.Type = OrderType.Market) |> List.reduce (fun acc o -> o) 
                         let notional_strategy_adjustment = Utils.Notional_Strategy_Adjustment(instrument, orderDate, reference_aum)
-                        
-                        let weight = Math.Abs(weightMap.[instrument.ID])
+                                                
+                        let exposure = this.Exposure(orderDate, instrument)
+                        let weight = Math.Abs(weightMap.[instrument.ID]) * exposure
+
                         let size = (if instrument.InstrumentType = InstrumentType.Strategy && not ((instrument :?> Strategy).Portfolio = null) then (instrument :?> Strategy).Direction(orderDate.DateTime, if weight > 0.0 then DirectionType.Long else DirectionType.Short); Math.Abs(weight) else weight) * reference_aum * notional_strategy_adjustment
 
                         let rebalancing_threshhold = this.[orderDate.DateTime, (int)MemoryType.RebalancingThreshhold, TimeSeriesRollType.Last]                      

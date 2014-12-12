@@ -139,6 +139,7 @@ namespace AQI.AQILabs.Kernel
         /// </param>
         public void ClearMemory(DateTime date)
         {
+
             Factory.ClearMemory(this, date);
         }
 
@@ -148,7 +149,7 @@ namespace AQI.AQILabs.Kernel
         /// <param name="date">DateTime value date 
         /// </param>
         public void ClearAUMMemory(DateTime date)
-        {
+        {            
             Factory.ClearAUMMemory(this, date);
         }
 
@@ -772,9 +773,9 @@ namespace AQI.AQILabs.Kernel
         /// <param name="date">DateTime value representing the date of the universe to be removed.
         /// </param>
         public void RemoveInstrument(Instrument instrument, DateTime date)
-        {
+        {            
             Dictionary<int, Instrument> instruments = Instruments(date, false);
-
+            
             if (instruments.ContainsKey(instrument.ID))
             {
                 instruments.Remove(instrument.ID);
@@ -921,7 +922,7 @@ namespace AQI.AQILabs.Kernel
         /// <param name="date">DateTime valued date 
         /// </param>
         public void ClearNextAUMMemory(DateTime date)
-        {
+        {            
             ClearAUMMemory(date);
         }
 
@@ -1138,7 +1139,6 @@ namespace AQI.AQILabs.Kernel
                     Portfolio.ParentPortfolio.UpdateReservePosition(date.DateTime, portvalue_mid, Portfolio.Currency);
                 portvalue_mid = 0;
             }
-
 
             // Store Portfolio Value prior to rebalancing to today
             CommitNAVCalculation(date, index_t, TimeSeriesType.Last);
@@ -1364,13 +1364,8 @@ namespace AQI.AQILabs.Kernel
                 }
             }
 
-
-            //double index_t = this[orderDate.DateTime, TimeSeriesType.Last, DataProvider.DefaultProvider, TimeSeriesRollType.Last];            
-            //double aum_value = Portfolio[orderDate.DateTime, TimeSeriesType.Last, DataProvider.DefaultProvider, Portfolio.TimeSeriesRoll];
             double aum_value = this.GetAUM(orderDate.DateTime, TimeSeriesType.Last);
-            //double aum_chg = this.GetAUMChange(orderDate.DateTime.AddMilliseconds(1), TimeSeriesType.Last);
             double aum_chg = this.GetOrderAUMChange(orderDate.DateTime, TimeSeriesType.Last);
-            //double aum_chg = this.GetAUMChange(NextTradingDate(orderDate.DateTime), TimeSeriesType.Last);
             aum_value += double.IsNaN(aum_chg) || double.IsInfinity(aum_chg) ? 0 : aum_chg;
             return new ExecutionContext(orderDate, aum_value);
         }
